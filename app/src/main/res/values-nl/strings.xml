@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Authors:
 * A67-A67
+* ABPMAB
 * Bouman4
 * Ciell
 * Dutchy45
@@ -122,6 +123,8 @@
   <string name="menu_from_camera">Foto nemen</string>
   <string name="menu_nearby">In de buurt</string>
   <string name="provider_contributions">Mijn uploads</string>
+  <string name="menu_copy_link">Koppeling kopiëren</string>
+  <string name="menu_link_copied">De koppeling is naar het klembord gekopieerd</string>
   <string name="menu_share">Delen</string>
   <string name="menu_view_file_page">Bestandspagina bekijken</string>
   <string name="share_title_hint">Titel (verplicht)</string>
@@ -131,7 +134,7 @@
   <string name="login_failed_network">Aanmelden niet mogelijk. Er is een probleem met het netwerk</string>
   <string name="login_failed_throttled">Te veel mislukte pogingen. Probeer het over een paar minuten opnieuw.</string>
   <string name="login_failed_blocked">Deze gebruiker is helaas geblokkeerd op Wikimedia Commons</string>
-  <string name="login_failed_2fa_needed">U moet uw code voor tweefactor-authenticatie opgeven.</string>
+  <string name="login_failed_2fa_needed">U moet uw code voor tweetrapsauthenticatie opgeven.</string>
   <string name="login_failed_generic">Aanmelden mislukt</string>
   <string name="share_upload_button">Uploaden</string>
   <string name="multiple_share_base_title">Geef deze verzameling een naam</string>
@@ -140,6 +143,7 @@
   <string name="categories_search_text_hint">Categorieën zoeken</string>
   <string name="depicts_search_text_hint">Objecten zoeken die in uw bestand worden weergeven (berg, Taj Mahal, enz.)</string>
   <string name="menu_save_categories">Opslaan</string>
+  <string name="menu_overflow_desc">Overloopmenu</string>
   <string name="refresh_button">Vernieuwen</string>
   <string name="display_list_button">Lijst</string>
   <string name="contributions_subtitle_zero">(Nog geen uploads)</string>
@@ -296,6 +300,7 @@
   <string name="copy_wikicode">Kopieer de wikitekst naar het klembord</string>
   <string name="wikicode_copied">De wikitekst is gekopieerd naar het klembord</string>
   <string name="nearby_location_not_available">In de buurt werkt mogelijk niet naar behoren. Locatie niet beschikbaar.</string>
+  <string name="nearby_showing_pins_offline">Internet niet beschikbaar. Alleen gecachte plaatsen worden getoond.</string>
   <string name="upload_location_access_denied">Locatietoegang geweigerd. Stel uw locatie handmatig in om deze functie te gebruiken.</string>
   <string name="location_permission_rationale_nearby">Toestemming vereist om een lijst van nabije plaatsen weer te geven</string>
   <string name="location_permission_rationale_explore">Toestemming vereist om een lijst van nabije afbeeldingen weer te geven</string>
@@ -379,11 +384,13 @@
   <string name="delete">Verwijderen</string>
   <string name="Achievements">Prestaties</string>
   <string name="Profile">Profiel</string>
+  <string name="badges">Badges</string>
   <string name="statistics">Statistieken</string>
   <string name="statistics_thanks">Ontvangen bedankjes</string>
   <string name="statistics_featured">Uitgelichte afbeeldingen</string>
   <string name="statistics_wikidata_edits">Afbeeldingen via \"Plaatsen in de buurt\"</string>
-  <string name="level">Niveau</string>
+  <string name="level">Niveau %d</string>
+  <string name="profileLevel">%s (Niveau %s)</string>
   <string name="images_uploaded">Geüploade afbeeldingen</string>
   <string name="image_reverts">Afbeeldingen niet teruggedraaid</string>
   <string name="images_used_by_wiki">Gebruikte afbeeldingen</string>
@@ -415,6 +422,7 @@
   <string name="map_application_missing">Er is geen compatibele kaarttoepassing gevonden op uw apparaat. Installeer een kaarttoepassing om deze functie te gebruiken.</string>
   <string name="title_page_bookmarks_pictures">Afbeeldingen</string>
   <string name="title_page_bookmarks_locations">Locaties</string>
+  <string name="title_page_bookmarks_categories">Categorieën</string>
   <string name="menu_bookmark">Toevoegen/verwijderen van bladwijzers</string>
   <string name="provider_bookmarks">Bladwijzers</string>
   <string name="bookmark_empty">U hebt geen bladwijzers toegevoegd</string>
@@ -496,6 +504,7 @@
   <string name="no_notification">U heeft geen ongelezen meldingen</string>
   <string name="no_read_notification">U heeft geen gelezen meldingen</string>
   <string name="share_logs_using">Logboeken delen via</string>
+  <string name="check_your_email_inbox">Bekijk uw e-mailinbox</string>
   <string name="menu_option_read">Bekijk gelezen</string>
   <string name="menu_option_unread">Ongelezen bekijken</string>
   <string name="error_occurred_in_picking_images">Er is een fout opgetreden bij het kiezen van afbeeldingen</string>
@@ -805,4 +814,25 @@
   <string name="pending">In behandeling</string>
   <string name="failed">Mislukt</string>
   <string name="could_not_load_place_data">Plaatsgegevens konden niet geladen worden</string>
+  <string name="custom_selector_delete_folder">Map verwijderen</string>
+  <string name="custom_selector_confirm_deletion_title">Bevestig verwijdering</string>
+  <string name="custom_selector_confirm_deletion_message">Weet u zeker dat u de map %1$s met %2$d onderdelen wilt verwijderen?</string>
+  <string name="custom_selector_delete">Verwijderen</string>
+  <string name="custom_selector_cancel">Annuleren</string>
+  <string name="custom_selector_folder_deleted_success">De map %1$s is verwijderd</string>
+  <string name="custom_selector_folder_deleted_failure">Het is niet gelukt de map %1$s te verwijderen</string>
+  <string name="custom_selector_error_trashing_folder_contents">Fout bij het weggooien van de inhoud van de map: %1$s</string>
+  <string name="custom_selector_folder_not_found_error">Het is niet gelukt om het mappad voor bucket-ID %1$d op te halen</string>
+  <string name="red_pin">Er is nog geen foto van deze plek, maak er eentje!</string>
+  <string name="green_pin">Er is al een foto van deze plek.</string>
+  <string name="grey_pin">We controleren nu of er een foto van deze plek is.</string>
+  <string name="error_while_loading">Fout bij het laden</string>
+  <string name="no_usages_found">Geen gebruik gevonden</string>
+  <string name="usages_on_commons_heading">Commons</string>
+  <string name="usages_on_other_wikis_heading">Andere wiki’s</string>
+  <string name="file_usages_container_heading">Bestandsgebruik</string>
+  <string name="title_activity_single_web_view">Activiteit enkele webraadpleging</string>
+  <string name="account">Account</string>
+  <string name="vanish_account">Account laten verdwijnen</string>
+  <string name="account_vanish_request_confirm_title">Waarschuwing verwijdering account</string>
 </resources>

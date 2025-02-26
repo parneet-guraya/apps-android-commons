@@ -13,7 +13,9 @@
     android:maxSdkVersion="29"/>
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
-  <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+  <!-- Permission needed up to Android 5.1, see https://github.com/commons-app/apps-android-commons/pull/5863 -->
+  <uses-permission android:name="android.permission.GET_ACCOUNTS"
+    android:maxSdkVersion="22"/>
   <uses-permission android:name="android.permission.USE_CREDENTIALS" />
   <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
@@ -53,6 +55,10 @@
     android:theme="@style/LightAppTheme"
     tools:ignore="GoogleAppIndexingWarning"
     tools:replace="android:appComponentFactory">
+    <activity
+      android:name=".activity.SingleWebViewActivity"
+      android:exported="false"
+      android:label="@string/title_activity_single_web_view" />
     <activity
       android:name=".nearby.WikidataFeedback"
       android:exported="false" />
@@ -97,7 +103,6 @@
       android:exported="true"
       android:hardwareAccelerated="false"
       android:icon="@mipmap/ic_launcher"
-      android:label="@string/app_name"
       android:windowSoftInputMode="adjustResize">
       <intent-filter android:label="@string/intent_share_upload_label">
         <action android:name="android.intent.action.SEND" />
@@ -120,7 +125,7 @@
       android:name=".contributions.MainActivity"
       android:configChanges="screenSize|keyboard|orientation"
       android:icon="@mipmap/ic_launcher"
-      android:label="@string/app_name" />
+      />
     <activity
       android:name=".settings.SettingsActivity"
       android:label="@string/title_activity_settings" />
@@ -170,7 +175,7 @@
       android:name=".review.ReviewActivity"
       android:label="@string/title_activity_review" />
     <activity
-      android:name=".LocationPicker.LocationPickerActivity"
+      android:name=".locationpicker.LocationPickerActivity"
       android:label="Location Picker" />
 
     <service
@@ -226,12 +231,6 @@
       android:authorities="${applicationId}.bookmarks.contentprovider"
       android:exported="false"
       android:label="@string/provider_bookmarks"
-      android:syncable="false" />
-    <provider
-      android:name=".bookmarks.locations.BookmarkLocationsContentProvider"
-      android:authorities="${applicationId}.bookmarks.locations.contentprovider"
-      android:exported="false"
-      android:label="@string/provider_bookmarks_location"
       android:syncable="false" />
     <provider
       android:name=".bookmarks.items.BookmarkItemsContentProvider"

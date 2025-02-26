@@ -1,11 +1,12 @@
 package fr.free.nrw.commons.description
 
 import android.app.ProgressDialog
-import android.content.Intent
 import android.os.Bundle
 import android.os.Parcelable
 import android.speech.RecognizerIntent
 import android.view.View
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import fr.free.nrw.commons.CommonsApplication
@@ -70,9 +71,13 @@ class DescriptionEditActivity :
 
     private lateinit var binding: ActivityDescriptionEditBinding
 
-    private val requestCodeForVoiceInput = 1213
+    private var descriptionAndCaptions: MutableList<UploadMediaDetail>? = null
 
-    private var descriptionAndCaptions: ArrayList<UploadMediaDetail>? = null
+    private val voiceInputResultLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        onVoiceInput(result)
+    }
 
     @Inject lateinit var descriptionEditHelper: DescriptionEditHelper
 
@@ -108,21 +113,18 @@ class DescriptionEditActivity :
      * Initializes the RecyclerView
      * @param descriptionAndCaptions list of description and caption
      */
-    private fun initRecyclerView(descriptionAndCaptions: ArrayList<UploadMediaDetail>?) {
+    private fun initRecyclerView(descriptionAndCaptions: MutableList<UploadMediaDetail>?) {
         uploadMediaDetailAdapter =
             UploadMediaDetailAdapter(
                 this,
                 savedLanguageValue,
-                descriptionAndCaptions,
+                descriptionAndCaptions ?: mutableListOf(),
                 recentLanguagesDao,
+                voiceInputResultLauncher
             )
-        uploadMediaDetailAdapter.setCallback { titleStringID: Int, messageStringId: Int ->
-            showInfoAlert(
-                titleStringID,
-                messageStringId,
-            )
-        }
-        uploadMediaDetailAdapter.setEventListener(this)
+
+        uploadMediaDetailAdapter.callback = UploadMediaDetailAdapter.Callback(::showInfoAlert)
+        uploadMediaDetailAdapter.eventListener = this
         rvDescriptions = binding.rvDescriptionsCaptions
         rvDescriptions!!.layoutManager = LinearLayoutManager(this)
         rvDescriptions!!.adapter = uploadMediaDetailAdapter
@@ -142,12 +144,20 @@ class DescriptionEditActivity :
             getString(titleStringID),
             getString(messageStringId),
             getString(android.R.string.ok),
-            null,
-            true,
+            null
         )
     }
 
     override fun onPrimaryCaptionTextChange(isNotEmpty: Boolean) {}
+
+    private fun onVoiceInput(result: ActivityResult) {
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            val resultData = result.data!!.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            uploadMediaDetailAdapter.handleSpeechResult(resultData!![0])
+        } else {
+            Timber.e("Error %s", result.resultCode)
+        }
+    }
 
     /**
      * Adds new language item to RecyclerView
@@ -221,11 +231,11 @@ class DescriptionEditActivity :
     ) {
         try {
             descriptionEditHelper
-                ?.addDescription(
+                .addDescription(
                     applicationContext,
                     media,
                     updatedWikiText,
-                )?.subscribeOn(Schedulers.io())
+                ).subscribeOn(Schedulers.io())
                 ?.observeOn(AndroidSchedulers.mainThread())
                 ?.subscribe(Consumer<Boolean> { s: Boolean? -> Timber.d("Descriptions are added.") })
                 ?.let {
@@ -234,7 +244,7 @@ class DescriptionEditActivity :
                     )
                 }
         } catch (e: InvalidLoginTokenException) {
-            val username: String? = sessionManager?.userName
+            val username: String? = sessionManager.userName
             val logoutListener =
                 CommonsApplication.BaseLogoutListener(
                     this,
@@ -242,7 +252,7 @@ class DescriptionEditActivity :
                     username,
                 )
 
-            val commonsApplication = CommonsApplication.getInstance()
+            val commonsApplication = CommonsApplication.instance
             if (commonsApplication != null) {
                 commonsApplication.clearApplicationData(this, logoutListener)
             }
@@ -252,11 +262,11 @@ class DescriptionEditActivity :
         for (mediaDetail in uploadMediaDetails) {
             try {
                 compositeDisposable.add(
-                    descriptionEditHelper!!
+                    descriptionEditHelper
                         .addCaption(
                             applicationContext,
                             media,
-                            mediaDetail.languageCode,
+                            mediaDetail.languageCode!!,
                             mediaDetail.captionText,
                         ).subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
@@ -275,7 +285,7 @@ class DescriptionEditActivity :
                         username,
                     )
 
-                val commonsApplication = CommonsApplication.getInstance()
+                val commonsApplication = CommonsApplication.instance
                 if (commonsApplication != null) {
                     commonsApplication.clearApplicationData(this, logoutListener)
                 }
@@ -288,24 +298,8 @@ class DescriptionEditActivity :
         progressDialog!!.isIndeterminate = true
         progressDialog!!.setTitle(getString(R.string.updating_caption_title))
         progressDialog!!.setMessage(getString(R.string.updating_caption_message))
-        progressDialog!!.setCanceledOnTouchOutside(false)
+        progressDialog!!.setCancelable(false)
         progressDialog!!.show()
-    }
-
-    override fun onActivityResult(
-        requestCode: Int,
-        resultCode: Int,
-        data: Intent?,
-    ) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == requestCodeForVoiceInput) {
-            if (resultCode == RESULT_OK && data != null) {
-                val result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                uploadMediaDetailAdapter.handleSpeechResult(result!![0])
-            } else {
-                Timber.e("Error %s", resultCode)
-            }
-        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

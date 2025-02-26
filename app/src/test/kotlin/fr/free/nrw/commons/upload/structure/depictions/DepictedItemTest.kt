@@ -1,10 +1,10 @@
 package fr.free.nrw.commons.upload.structure.depictions
 
-import com.nhaarman.mockitokotlin2.mock
 import depictedItem
 import entity
 import entityId
 import fr.free.nrw.commons.wikidata.WikidataProperties
+import io.mockk.mockk
 import org.junit.Assert
 import org.junit.Test
 import place
@@ -53,7 +53,7 @@ class DepictedItemTest {
                 entity(
                     statements =
                         mapOf(
-                            WikidataProperties.IMAGE.propertyName to listOf(statement(snak(dataValue = mock()))),
+                            WikidataProperties.IMAGE.propertyName to listOf(statement(snak(dataValue = mockk()))),
                         ),
                 ),
             ).imageUrl,
@@ -180,5 +180,21 @@ class DepictedItemTest {
     @Test
     fun `hashCode returns different values for objects with different name`() {
         Assert.assertNotEquals(depictedItem(name = "a").hashCode(), depictedItem(name = "b").hashCode())
+    }
+
+    @Test
+    fun `primaryImage is derived correctly from imageUrl`() {
+        Assert.assertEquals(
+            DepictedItem(
+                entity(
+                    statements = mapOf(
+                        WikidataProperties.IMAGE.propertyName to listOf(
+                            statement(snak(dataValue = valueString("prefix: example_image name"))),
+                        ),
+                    ),
+                ),
+            ).primaryImage,
+            "_example_image_name",
+        )
     }
 }

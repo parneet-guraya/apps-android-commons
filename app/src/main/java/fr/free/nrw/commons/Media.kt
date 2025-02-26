@@ -3,6 +3,7 @@ package fr.free.nrw.commons
 import android.os.Parcelable
 import fr.free.nrw.commons.location.LatLng
 import fr.free.nrw.commons.wikidata.model.page.PageTitle
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.util.Date
 import java.util.Locale
@@ -89,6 +90,41 @@ class Media constructor(
         captions = captions,
     )
 
+    constructor(
+        captions: Map<String, String>,
+        categories: List<String>?,
+        filename: String?,
+        fallbackDescription: String?,
+        author: String?,
+        user: String?,
+        dateUploaded: Date? = Date(),
+        license: String? = null,
+        licenseUrl: String? = null,
+        imageUrl: String? = null,
+        thumbUrl: String? = null,
+        coordinates: LatLng? = null,
+        descriptions: Map<String, String> = emptyMap(),
+        depictionIds: List<String> = emptyList(),
+        categoriesHiddenStatus: Map<String, Boolean> = emptyMap()
+    ) : this(
+        pageId = UUID.randomUUID().toString(),
+        filename = filename,
+        fallbackDescription = fallbackDescription,
+        dateUploaded = dateUploaded,
+        author = author,
+        user = user,
+        categories = categories,
+        captions = captions,
+        license = license,
+        licenseUrl = licenseUrl,
+        imageUrl = imageUrl,
+        thumbUrl = thumbUrl,
+        coordinates = coordinates,
+        descriptions = descriptions,
+        depictionIds = depictionIds,
+        categoriesHiddenStatus = categoriesHiddenStatus
+    )
+
     /**
      * Gets media display title
      * @return Media title
@@ -124,6 +160,7 @@ class Media constructor(
      * Gets the categories the file falls under.
      * @return file categories as an ArrayList of Strings
      */
+    @IgnoredOnParcel
     var addedCategories: List<String>? = null
         // TODO added categories should be removed. It is added for a short fix. On category update,
         //  categories should be re-fetched instead

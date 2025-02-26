@@ -107,6 +107,8 @@
   <string name="menu_from_camera">Tag billede</string>
   <string name="menu_nearby">I nærheden</string>
   <string name="provider_contributions">Mine uploads</string>
+  <string name="menu_copy_link">Kopiér link</string>
+  <string name="menu_link_copied">Linket er blevet kopieret til udklipsholderen</string>
   <string name="menu_share">Del</string>
   <string name="menu_view_file_page">Vis filside</string>
   <string name="share_title_hint">Billedtekst (påkrævet)</string>
@@ -125,6 +127,7 @@
   <string name="categories_search_text_hint">Søg kategorier</string>
   <string name="depicts_search_text_hint">Søg efter genstande, som dine medier afbilder (bjerg, Taj Mahal osv.)</string>
   <string name="menu_save_categories">Gem</string>
+  <string name="menu_overflow_desc">Overløbsmenu</string>
   <string name="refresh_button">Opdater</string>
   <string name="display_list_button">Liste</string>
   <string name="contributions_subtitle_zero">(Ingen uploads endnu)</string>
@@ -281,6 +284,7 @@
   <string name="copy_wikicode">Kopier wikiteksten til udklipsholderen</string>
   <string name="wikicode_copied">Wikiteksten blev kopieret til udklipsholderen</string>
   <string name="nearby_location_not_available">I nærheden fungerer muligvis ikke korrekt. Placeringen er ikke tilgængelig.</string>
+  <string name="nearby_showing_pins_offline">Internet ikke tilgængeligt. Viser kun cachelagrede steder.</string>
   <string name="upload_location_access_denied">Placeringsadgang nægtet. Indstil din placering manuelt for at bruge denne funktion.</string>
   <string name="location_permission_rationale_nearby">Tilladelse kræves for at vise en liste over steder i nærheden</string>
   <string name="location_permission_rationale_explore">Der kræves tilladelse til at vise en liste over billeder i nærheden</string>
@@ -364,11 +368,13 @@
   <string name="delete">Slet</string>
   <string name="Achievements">Præstationer</string>
   <string name="Profile">Profil</string>
+  <string name="badges">Emblemer</string>
   <string name="statistics">Statistik</string>
   <string name="statistics_thanks">Tak modtaget</string>
   <string name="statistics_featured">Udvalgte billeder</string>
   <string name="statistics_wikidata_edits">Billeder via \"Steder i nærheden\"</string>
-  <string name="level">Niveau</string>
+  <string name="level">Niveau %d</string>
+  <string name="profileLevel">%s (Niveau %s)</string>
   <string name="images_uploaded">Uploadede billeder</string>
   <string name="image_reverts">Billeder, som ikke er blevet trukket tilbage</string>
   <string name="images_used_by_wiki">Billeder brugt</string>
@@ -400,6 +406,7 @@
   <string name="map_application_missing">Der blev ikke fundet nogen kompatibel kortapplikation på din enhed. Installer en kortapplikation for at bruge denne funktion.</string>
   <string name="title_page_bookmarks_pictures">Billeder</string>
   <string name="title_page_bookmarks_locations">Placeringer</string>
+  <string name="title_page_bookmarks_categories">Kategorier</string>
   <string name="menu_bookmark">Tilføj/Fjern bogmærker</string>
   <string name="provider_bookmarks">Bogmærker</string>
   <string name="bookmark_empty">Du har ikke tilføjet nogen bogmærker</string>
@@ -481,6 +488,7 @@
   <string name="no_notification">Du har ingen ulæste notifikationer</string>
   <string name="no_read_notification">Du har ingen læste notifikationer</string>
   <string name="share_logs_using">Del logs ved hjælp af</string>
+  <string name="check_your_email_inbox">Tjek din e-mail-indbakke</string>
   <string name="menu_option_read">Vis læste</string>
   <string name="menu_option_unread">Vis ulæste</string>
   <string name="error_occurred_in_picking_images">Der opstod en fejl under udvælgelse af billeder</string>
@@ -788,4 +796,31 @@
   <string name="pending">Afventer</string>
   <string name="failed">Mislykkedes</string>
   <string name="could_not_load_place_data">Kunne ikke indlæse steddata</string>
+  <string name="custom_selector_delete_folder">Slet mappe</string>
+  <string name="custom_selector_confirm_deletion_title">Bekræft sletning</string>
+  <string name="custom_selector_confirm_deletion_message">Er du sikker på, at du vil slette mappen %1$s, der indeholder %2$d elementer?</string>
+  <string name="custom_selector_delete">Slet</string>
+  <string name="custom_selector_cancel">Annuller</string>
+  <string name="custom_selector_folder_deleted_success">Mappen %1$s blev slettet</string>
+  <string name="custom_selector_folder_deleted_failure">Kunne ikke slette mappen %1$s</string>
+  <string name="custom_selector_error_trashing_folder_contents">Fejl ved sletning af mappeindhold: %1$s</string>
+  <string name="custom_selector_folder_not_found_error">Kunne ikke hente mappestien til bucket-id: %1$d</string>
+  <string name="red_pin">Dette sted har endnu ikke noget billede, så gå hen og tag et!</string>
+  <string name="green_pin">Dette sted har allerede et billede.</string>
+  <string name="grey_pin">Tjekker nu, om dette sted har et billede.</string>
+  <string name="error_while_loading">Fejl under indlæsning</string>
+  <string name="no_usages_found">Ingen anvendelser fundet</string>
+  <string name="usages_on_commons_heading">Commons</string>
+  <string name="usages_on_other_wikis_heading">Andre wikier</string>
+  <string name="bullet_point">•</string>
+  <string name="file_usages_container_heading">Filanvendelser</string>
+  <string name="account">Konto</string>
+  <string name="vanish_account">Få konto til at forsvinde</string>
+  <string name="account_vanish_request_confirm_title">Advarsel om forsvinding af konto</string>
+  <string name="account_vanish_request_confirm">Forsvinding er en &lt;b&gt;sidste udvej&lt;/b&gt; og bør &lt;b&gt;kun bruges, når du for altid ønsker at stoppe med at redigere&lt;/b&gt; og også for at skjule så mange af dine tidligere tilknytninger som muligt.&lt;br/&gt;&lt;br/&gt; Kontosletning på Wikipedia Commons sker ved at ændre dit kontonavn, således at andre ikke kan genkende dine bidrag i en proces, der kaldes kontoforsvinding (Vanishing). &lt;b&gt;Forsvinding garanterer ikke fuldstændig anonymitet eller fjerner bidrag til projekterne&lt;/b&gt; .</string>
+  <string name="caption">Billedtekst</string>
+  <string name="caption_copied_to_clipboard">Billedtekst kopieret til udklipsholder</string>
+  <string name="congratulations_all_pictures_in_this_album_have_been_either_uploaded_or_marked_as_not_for_upload">Tillykke, alle billeder i dette album er enten blevet uploadet eller markeret som ikke til upload.</string>
+  <string name="show_in_explore">Vis i Udforsk</string>
+  <string name="show_in_nearby">Vis i I nærheden</string>
 </resources>
