@@ -5,6 +5,7 @@ on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
   actions: read
+  pull-requests: write
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}
@@ -93,7 +94,8 @@ jobs:
         run: bash ./gradlew assembleBetaDebug --stacktrace
 
       - name: Upload betaDebug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
+        id: beta_artifact
         with:
           name: betaDebugAPK
           path: app/build/outputs/apk/beta/debug/app-*.apk
@@ -102,18 +104,36 @@ jobs:
         run: bash ./gradlew assembleProdDebug --stacktrace
 
       - name: Upload prodDebug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
+        id: prod_artifact
         with:
           name: prodDebugAPK
           path: app/build/outputs/apk/prod/debug/app-*.apk
-          
-      - name: Store Workflow Run ID
-        if: github.event_name == 'pull_request'
-        run: echo "${{ github.run_id }}" > run_id.txt
 
-      - name: Upload Run ID as Artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: run-id
-          path: run_id.txt
+      - name: Delete Old Comments
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          COMMENTS=$(gh api repos/${{ github.repository }}/issues/$PR_NUMBER/comments --jq '.[] | select(.body | startswith("✅ APKs available for download")) | .id')
+
+          if [ -n "$COMMENTS" ]; then
+            echo "Found old comments, deleting..."
+            for COMMENT_ID in $COMMENTS; do
+              gh api --method DELETE repos/${{ github.repository }}/issues/comments/$COMMENT_ID || exit 1
+            done
+          fi
+
+      - name: Post Updated Comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          BETA_APK_URL="${{ steps.beta_artifact.outputs.artifact-url }}"
+          PROD_APK_URL="${{ steps.prod_artifact.outputs.artifact-url }}"
+
+          COMMENT="✅ APKs available for download:  
+          - 🔵 [Download Beta Debug APK]($BETA_APK_URL)  
+          - 🔴 [Download Prod Debug APK]($PROD_APK_URL)"
+
+          gh pr comment $PR_NUMBER --body "$COMMENT"
