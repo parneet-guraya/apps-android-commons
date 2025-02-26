@@ -111,6 +111,7 @@ jobs:
           path: app/build/outputs/apk/prod/debug/app-*.apk
 
       - name: Delete Old Comments
+        if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -125,6 +126,7 @@ jobs:
           fi
 
       - name: Post Updated Comment
+        if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
