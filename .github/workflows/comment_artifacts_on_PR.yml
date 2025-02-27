@@ -103,5 +103,3 @@ jobs:
               issue_number: Number(prNumber),
               body: commentBody
             });
-            console.log("Posted new comment with artifact links.");
-            
