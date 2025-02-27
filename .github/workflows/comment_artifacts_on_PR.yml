@@ -76,10 +76,10 @@ jobs:
               }).join('\n');
 
             // Fetch and delete old comments
-            const comments = await github.rest.actions.listComments({
+            const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              run_id: runId,
+              issue_number: Number(prNumber),
             });
             
             console.log("Comments Response:", JSON.stringify(comments, null, 2))
