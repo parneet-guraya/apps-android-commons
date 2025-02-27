@@ -103,5 +103,9 @@ jobs:
               issue_number: Number(prNumber),
               body: commentBody
             });
+<<<<<<< HEAD
             console.log("Posted new comment with artifact links.");
             
+=======
+            console.log("Posted new comment with artifact links.");
+>>>>>>> cadba90cc (trigger workflows_run event after uploading artifacts)
