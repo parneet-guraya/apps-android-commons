@@ -1,0 +1,103 @@
+name: Comment Artifacts on PR
+
+on:
+  workflow_run:
+    workflows: [ "Android CI" ]
+    types: [ completed ]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: comment-${{ github.event.workflow_run.id }}
+  cancel-in-progress: true
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
+    steps:
+      - name: Download and process artifacts
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const runId = context.payload.workflow_run.id;
+
+            // Fetch all artifacts for the workflow run
+            const allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+            });
+
+            // Find the pr_number artifact
+            const prNumberArtifact = allArtifacts.data.artifacts.find(artifact => artifact.name === "pr_number");
+            if (!prNumberArtifact) {
+              console.log("pr_number artifact not found.");
+              return;
+            }
+
+            // Download the pr_number artifact
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: prNumberArtifact.id,
+              archive_format: 'zip',
+            });
+
+            // Write and unzip the pr_number artifact
+            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/pr_number.zip`, Buffer.from(download.data));
+            const { execSync } = require('child_process');
+            execSync('unzip -q pr_number.zip -d ./pr_number/');
+            fs.unlinkSync('pr_number.zip');
+
+            // Read the PR number from JSON
+            const prData = JSON.parse(fs.readFileSync('./pr_number/pr_number.json', 'utf8'));
+            const prNumber = prData.pr_number;
+
+            if (!prNumber || prNumber === 'null') {
+              console.log("No valid PR number found in pr_number.json. Skipping.");
+              return;
+            }
+
+            // Filter out pr_number artifact and build comment from remaining artifacts
+            const artifactsToLink = allArtifacts.data.artifacts.filter(artifact => artifact.name !== "pr_number");
+            if (artifactsToLink.length === 0) {
+              console.log("No artifacts to link found.");
+              return;
+            }
+
+            const commentBody = `✅ Artifacts uploaded!\n` + 
+              artifactsToLink.map(artifact => {
+                return `- 📄 [Download ${artifact.name}](${artifact.archive_download_url})`;
+              }).join('\n');
+
+            // Fetch and delete old comments
+            const comments = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+            });
+            const oldComments = comments.data.filter(comment => 
+              comment.body.startsWith("✅ Artifacts uploaded!")
+            );
+            for (const comment of oldComments) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id,
+              });
+              console.log(`Deleted old comment ID: ${comment.id}`);
+            };
+
+            // Post the new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: Number(prNumber),
+              body: commentBody
+            });
+            console.log("Posted new comment with artifact links.");
