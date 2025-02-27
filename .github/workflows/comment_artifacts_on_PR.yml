@@ -82,9 +82,10 @@ jobs:
               console.log(`Deleted old comment ID: ${comment.id}`);
             };
             
-            const commentBody = `"✅ Generated APK variants!"!\n` + 
+            const commentBody = `✅ Generated APK variants!\n` + 
             artifactsToLink.map(artifact => {
-                return `- 🤖 [Download ${artifact.name}](${artifact.archive_download_url})`;
+                const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}/artifacts/${artifact.id}`;
+                return `- 🤖 [Download ${artifact.name}](${artifactUrl})`;
             }).join('\n');
 
             await github.rest.issues.createComment({
