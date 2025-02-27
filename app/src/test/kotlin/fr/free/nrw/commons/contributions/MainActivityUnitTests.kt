@@ -342,20 +342,6 @@ class MainActivityUnitTests {
 
     @Test
     @Throws(Exception::class)
-    fun testOnActivityResult() {
-        val method: Method =
-            MainActivity::class.java.getDeclaredMethod(
-                "onActivityResult",
-                Int::class.java,
-                Int::class.java,
-                Intent::class.java,
-            )
-        method.isAccessible = true
-        method.invoke(activity, 0, 0, null)
-    }
-
-    @Test
-    @Throws(Exception::class)
     fun testOnResume() {
         val method: Method =
             MainActivity::class.java.getDeclaredMethod(
@@ -462,7 +448,7 @@ class MainActivityUnitTests {
     fun testOnSetUpPagerNearBy() {
         val item = Mockito.mock(MenuItem::class.java)
         `when`(item.title).thenReturn(activity.getString(R.string.nearby_fragment))
-        activity.navListener.onNavigationItemSelected(item)
+        activity.navListener?.onNavigationItemSelected(item)
         verify(item, Mockito.times(3)).title
         verify(applicationKvStore, Mockito.times(1))
             .putBoolean("last_opened_nearby", true)
@@ -473,7 +459,7 @@ class MainActivityUnitTests {
     fun testOnSetUpPagerOtherThanNearBy() {
         val item = Mockito.mock(MenuItem::class.java)
         `when`(item.title).thenReturn(activity.getString(R.string.bookmarks))
-        activity.navListener.onNavigationItemSelected(item)
+        activity.navListener?.onNavigationItemSelected(item)
         verify(item, Mockito.times(3)).title
         verify(applicationKvStore, Mockito.times(1))
             .putBoolean("last_opened_nearby", false)

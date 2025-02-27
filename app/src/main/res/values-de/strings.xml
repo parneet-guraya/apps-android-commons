@@ -19,12 +19,14 @@
 * ManuelFranz
 * Mcliquid
 * Metalhead64
+* Mukeber
 * Nekky-chan
 * Ngschaider
 * Pyscowicz
 * Reedy
 * RucolaSpacecat
 * Sebastian Wallroth
+* SergeCroise
 * SpaceEnergy
 * Sujan
 * Sushi
@@ -312,6 +314,7 @@
   <string name="copy_wikicode">Den Wikitext in die Zwischenablage kopieren</string>
   <string name="wikicode_copied">Der Wikitext wurde in die Zwischenablage kopiert</string>
   <string name="nearby_location_not_available">„In der Nähe“ arbeiten möglicherwiese nicht richtig. Der Standort ist nicht verfügbar.</string>
+  <string name="nearby_showing_pins_offline">Internet ist nicht verfügbar. Es werden nur zwischengespeicherte Orte angezeigt.</string>
   <string name="upload_location_access_denied">Standortzugriff verweigert. Bitte lege deinen Standort manuell fest, um diese Funktion nutzen zu können.</string>
   <string name="location_permission_rationale_nearby">Berechtigung zur Anzeige einer Liste mit Orten in der Nähe erforderlich</string>
   <string name="location_permission_rationale_explore">Berechtigung zur Anzeige einer Liste mit Orten in der Nähe erforderlich</string>
@@ -399,7 +402,7 @@
   <string name="statistics_thanks">Erhaltene Dankeschöns</string>
   <string name="statistics_featured">Vorgestellte Bilder</string>
   <string name="statistics_wikidata_edits">Bilder über „Orte in der Nähe“</string>
-  <string name="level">Niveau</string>
+  <string name="level" fuzzy="true">Niveau</string>
   <string name="images_uploaded">Hochgeladene Bilder</string>
   <string name="image_reverts">Bilder nicht zurückgesetzt</string>
   <string name="images_used_by_wiki">Verwendete Bilder</string>
@@ -512,6 +515,7 @@
   <string name="no_notification">Du hast keine ungelesenen Benachrichtigungen</string>
   <string name="no_read_notification">Du hast keine gelesenen Benachrichtigungen</string>
   <string name="share_logs_using">Protokolle freigeben mit</string>
+  <string name="check_your_email_inbox">Überprüfe deinen E-Mail-Posteingang</string>
   <string name="menu_option_read">Gelesene ansehen</string>
   <string name="menu_option_unread">Ungelesene ansehen</string>
   <string name="error_occurred_in_picking_images">Beim Auswählen der Bilder ist ein Fehler aufgetreten</string>
@@ -816,4 +820,15 @@
   <string name="pending">Ausstehend</string>
   <string name="failed">Fehlgeschlagen</string>
   <string name="could_not_load_place_data">Ortsdaten konnten nicht geladen werden</string>
+  <string name="custom_selector_delete_folder">Ordner löschen</string>
+  <string name="custom_selector_confirm_deletion_title">Löschung bestätigen</string>
+  <string name="custom_selector_confirm_deletion_message">Bist du sicher, dass du den Ordner %1$s löschen möchten, der %2$d Datenobjekte enthält?</string>
+  <string name="custom_selector_delete">Löschen</string>
+  <string name="custom_selector_cancel">Abbrechen</string>
+  <string name="custom_selector_folder_deleted_success">Ordner %1$s erfolgreich gelöscht</string>
+  <string name="custom_selector_folder_deleted_failure">Ordner %1$s konnte nicht gelöscht werden</string>
+  <string name="custom_selector_error_trashing_folder_contents">Fehler beim Löschen des Ordnerinhalts: %1$s</string>
+  <string name="red_pin">Von diesem Ort gibt es noch kein Bild. Mach eins!</string>
+  <string name="green_pin">Dieser Ort hat bereits ein Bild.</string>
+  <string name="grey_pin">Jetzt wird geprüft, ob dieser Ort bereits ein Bild hat.</string>
 </resources>

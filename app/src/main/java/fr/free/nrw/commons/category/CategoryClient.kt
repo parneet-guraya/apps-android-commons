@@ -79,6 +79,24 @@ class CategoryClient
             )
 
         /**
+         * Fetches categories belonging to an image (P18 of some wikidata entity).
+         *
+         * @param image P18 of some wikidata entity
+         * @param itemLimit How many categories to return
+         * @return Single Observable emitting the list of categories
+         */
+        fun getCategoriesOfImage(
+            image: String,
+            itemLimit: Int,
+        ): Single<List<CategoryItem>> =
+            responseMapper(
+                categoryInterface.getCategoriesByTitles(
+                    "File:${image}",
+                    itemLimit,
+                ),
+            )
+
+        /**
          * The method takes categoryName as input and returns a List of Subcategories
          * It uses the generator query API to get the subcategories in a category, 500 at a time.
          *
@@ -124,7 +142,9 @@ class CategoryClient
                 }.map {
                     it
                         .filter { page ->
-                            page.categoryInfo() == null || !page.categoryInfo().isHidden
+                            // Null check is not redundant because some values could be null
+                            // for mocks when running unit tests
+                            page.categoryInfo()?.isHidden != true
                         }.map {
                             CategoryItem(
                                 it.title().replace(CATEGORY_PREFIX, ""),

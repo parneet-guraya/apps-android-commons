@@ -4,14 +4,12 @@ import static fr.free.nrw.commons.location.LocationServiceManager.LocationChange
 import static fr.free.nrw.commons.location.LocationServiceManager.LocationChangeType.LOCATION_SLIGHTLY_CHANGED;
 import static fr.free.nrw.commons.utils.MapUtils.ZOOM_LEVEL;
 
-import android.Manifest;
 import android.Manifest.permission;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -19,24 +17,20 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.Toast;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.content.ContextCompat;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import fr.free.nrw.commons.BaseMarker;
 import fr.free.nrw.commons.MapController;
@@ -44,11 +38,11 @@ import fr.free.nrw.commons.Media;
 import fr.free.nrw.commons.R;
 import fr.free.nrw.commons.Utils;
 import fr.free.nrw.commons.bookmarks.locations.BookmarkLocationsDao;
+import fr.free.nrw.commons.contributions.MainActivity;
 import fr.free.nrw.commons.databinding.FragmentExploreMapBinding;
 import fr.free.nrw.commons.di.CommonsDaggerSupportFragment;
 import fr.free.nrw.commons.explore.ExploreMapRootFragment;
 import fr.free.nrw.commons.explore.paging.LiveDataConverter;
-import fr.free.nrw.commons.filepicker.Constants;
 import fr.free.nrw.commons.kvstore.JsonKvStore;
 import fr.free.nrw.commons.location.LatLng;
 import fr.free.nrw.commons.location.LocationPermissionsHelper;
@@ -60,7 +54,6 @@ import fr.free.nrw.commons.nearby.Place;
 import fr.free.nrw.commons.utils.DialogUtil;
 import fr.free.nrw.commons.utils.MapUtils;
 import fr.free.nrw.commons.utils.NetworkUtils;
-import fr.free.nrw.commons.utils.PermissionUtils;
 import fr.free.nrw.commons.utils.SystemThemeUtils;
 import fr.free.nrw.commons.utils.ViewUtil;
 import io.reactivex.Observable;
@@ -123,6 +116,11 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
     SystemThemeUtils systemThemeUtils;
     LocationPermissionsHelper locationPermissionsHelper;
 
+    // Nearby map state (if we came from Nearby)
+    private double prevZoom;
+    private double prevLatitude;
+    private double prevLongitude;
+
     private ExploreMapPresenter presenter;
 
     public FragmentExploreMapBinding binding;
@@ -142,8 +140,8 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
                             askForLocationPermission();
                         },
                         null,
-                        null,
-                        false);
+                        null
+                    );
                 } else {
                     if (isPermissionDenied) {
                         locationPermissionsHelper.showAppSettingsDialog(getActivity(),
@@ -168,6 +166,7 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
         ViewGroup container,
         Bundle savedInstanceState
     ) {
+        loadNearbyMapData();
         binding = FragmentExploreMapBinding.inflate(getLayoutInflater());
         return binding.getRoot();
     }
@@ -176,9 +175,15 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
     public void onViewCreated(@NonNull final View view, @Nullable final Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         setSearchThisAreaButtonVisibility(false);
-        binding.tvAttribution.setText(Html.fromHtml(getString(R.string.map_attribution)));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            binding.tvAttribution.setText(
+                Html.fromHtml(getString(R.string.map_attribution), Html.FROM_HTML_MODE_LEGACY));
+        } else {
+            binding.tvAttribution.setText(Html.fromHtml(getString(R.string.map_attribution)));
+        }
         initNetworkBroadCastReceiver();
-        locationPermissionsHelper = new LocationPermissionsHelper(getActivity(),locationManager,this);
+        locationPermissionsHelper = new LocationPermissionsHelper(getActivity(), locationManager,
+            this);
         if (presenter == null) {
             presenter = new ExploreMapPresenter(bookmarkLocationDao);
         }
@@ -208,9 +213,14 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
         scaleBarOverlay.setBackgroundPaint(barPaint);
         scaleBarOverlay.enableScaleBar();
         binding.mapView.getOverlays().add(scaleBarOverlay);
-        binding.mapView.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.NEVER);
+        binding.mapView.getZoomController()
+            .setVisibility(CustomZoomButtonsController.Visibility.NEVER);
         binding.mapView.setMultiTouchControls(true);
-        binding.mapView.getController().setZoom(ZOOM_LEVEL);
+
+        if (!isCameFromNearbyMap()) {
+            binding.mapView.getController().setZoom(ZOOM_LEVEL);
+        }
+
         performMapReadyActions();
 
         binding.mapView.getOverlays().add(new MapEventsOverlay(new MapEventsReceiver() {
@@ -299,7 +309,7 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
         unregisterNetworkReceiver();
     }
 
-    
+
     /**
      * Unregisters the networkReceiver
      */
@@ -310,7 +320,7 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
     }
 
     private void startMapWithoutPermission() {
-        lastKnownLocation = MapUtils.defaultLatLng;
+        lastKnownLocation = MapUtils.getDefaultLatLng();
         moveCameraToPosition(
             new GeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()));
         presenter.onMapReady(exploreMapController);
@@ -331,10 +341,50 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
             !locationPermissionsHelper.checkLocationPermission(getActivity())) {
             isPermissionDenied = true;
         }
-        lastKnownLocation = MapUtils.defaultLatLng;
-        moveCameraToPosition(
-            new GeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()));
+        lastKnownLocation = MapUtils.getDefaultLatLng();
+
+        // if we came from 'Show in Explore' in Nearby, load Nearby map center and zoom
+        if (isCameFromNearbyMap()) {
+            moveCameraToPosition(
+                new GeoPoint(prevLatitude, prevLongitude),
+                prevZoom,
+                1L
+            );
+        } else {
+            moveCameraToPosition(
+                new GeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude()));
+        }
         presenter.onMapReady(exploreMapController);
+    }
+
+    /**
+     * Fetch Nearby map camera data from fragment arguments if any.
+     */
+    public void loadNearbyMapData() {
+        // get fragment arguments
+        if (getArguments() != null) {
+            prevZoom = getArguments().getDouble("prev_zoom");
+            prevLatitude = getArguments().getDouble("prev_latitude");
+            prevLongitude = getArguments().getDouble("prev_longitude");
+        }
+    }
+
+    /**
+     * Checks if fragment arguments contain data from Nearby map, indicating that the user navigated
+     * from Nearby using 'Show in Explore'.
+     *
+     * @return true if user navigated from Nearby map
+     **/
+    public boolean isCameFromNearbyMap() {
+        return prevZoom != 0.0 || prevLatitude != 0.0 || prevLongitude != 0.0;
+    }
+
+    public void loadNearbyMapFromExplore() {
+        ((MainActivity) getContext()).loadNearbyMapFromExplore(
+            binding.mapView.getZoomLevelDouble(),
+            binding.mapView.getMapCenter().getLatitude(),
+            binding.mapView.getMapCenter().getLongitude()
+        );
     }
 
     private void initViews() {
@@ -350,7 +400,8 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
      */
     @SuppressLint("ClickableViewAccessibility")
     private void initBottomSheets() {
-        bottomSheetDetailsBehavior = BottomSheetBehavior.from(binding.bottomSheetDetailsBinding.getRoot());
+        bottomSheetDetailsBehavior = BottomSheetBehavior.from(
+            binding.bottomSheetDetailsBinding.getRoot());
         bottomSheetDetailsBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
         binding.bottomSheetDetailsBinding.getRoot().setVisibility(View.VISIBLE);
     }
@@ -408,23 +459,25 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
         if (currentLatLng == null) {
             return;
         }
-        if (currentLatLng.equals(getLastMapFocus())) { // Means we are checking around current location
+        if (currentLatLng.equals(
+            getLastMapFocus())) { // Means we are checking around current location
             nearbyPlacesInfoObservable = presenter.loadAttractionsFromLocation(currentLatLng,
                 getLastMapFocus(), true);
         } else {
             nearbyPlacesInfoObservable = presenter.loadAttractionsFromLocation(getLastMapFocus(),
                 currentLatLng, false);
         }
-        compositeDisposable.add(nearbyPlacesInfoObservable
+            getCompositeDisposable().add(nearbyPlacesInfoObservable
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(explorePlacesInfo -> {
                     mediaList = explorePlacesInfo.mediaList;
-                    if(mediaList == null) {
+                    if (mediaList == null) {
                         showResponseMessage(getString(R.string.no_pictures_in_this_area));
                     }
                     updateMapMarkers(explorePlacesInfo);
-                    lastMapFocus = new GeoPoint(currentLatLng.getLatitude(), currentLatLng.getLongitude());
+                    lastMapFocus = new GeoPoint(currentLatLng.getLatitude(),
+                        currentLatLng.getLongitude());
                 },
                 throwable -> {
                     Timber.d(throwable);
@@ -478,9 +531,9 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
             locationManager.requestLocationUpdatesFromProvider(LocationManager.NETWORK_PROVIDER);
             locationManager.requestLocationUpdatesFromProvider(LocationManager.GPS_PROVIDER);
             setProgressBarVisibility(true);
-        }
-        else {
-            locationPermissionsHelper.showLocationOffDialog(getActivity(), R.string.ask_to_turn_location_on_text);
+        } else {
+            locationPermissionsHelper.showLocationOffDialog(getActivity(),
+                R.string.ask_to_turn_location_on_text);
         }
         presenter.onMapReady(exploreMapController);
         registerUnregisterLocationListener(false);
@@ -512,7 +565,8 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
             recenterToUserLocation = true;
             return;
         }
-        recenterMarkerToPosition(new GeoPoint(currentLatLng.getLatitude(), currentLatLng.getLongitude()));
+        recenterMarkerToPosition(
+            new GeoPoint(currentLatLng.getLatitude(), currentLatLng.getLongitude()));
         binding.mapView.getController()
             .animateTo(new GeoPoint(currentLatLng.getLatitude(), currentLatLng.getLongitude()));
         if (lastMapFocus != null) {
@@ -549,10 +603,12 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
      * @param place Place of clicked nearby marker
      */
     private void passInfoToSheet(final Place place) {
-        binding.bottomSheetDetailsBinding.directionsButton.setOnClickListener(view -> Utils.handleGeoCoordinates(getActivity(),
-            place.getLocation()));
+        binding.bottomSheetDetailsBinding.directionsButton.setOnClickListener(
+            view -> Utils.handleGeoCoordinates(getActivity(),
+                place.getLocation(), binding.mapView.getZoomLevelDouble()));
 
-        binding.bottomSheetDetailsBinding.commonsButton.setVisibility(place.hasCommonsLink() ? View.VISIBLE : View.GONE);
+        binding.bottomSheetDetailsBinding.commonsButton.setVisibility(
+            place.hasCommonsLink() ? View.VISIBLE : View.GONE);
         binding.bottomSheetDetailsBinding.commonsButton.setOnClickListener(
             view -> Utils.handleWebUrl(getContext(), place.siteLinks.getCommonsLink()));
 
@@ -566,7 +622,8 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
             }
             index++;
         }
-        binding.bottomSheetDetailsBinding.title.setText(place.name.substring(5, place.name.lastIndexOf(".")));
+        binding.bottomSheetDetailsBinding.title.setText(
+            place.name.substring(5, place.name.lastIndexOf(".")));
         binding.bottomSheetDetailsBinding.category.setText(place.distance);
         // Remove label since it is double information
         String descriptionText = place.getLongDescription()
@@ -644,40 +701,43 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
      * @param nearbyBaseMarker The NearbyBaseMarker object representing the marker to be added.
      */
     private void addMarkerToMap(BaseMarker nearbyBaseMarker) {
-        ArrayList<OverlayItem> items = new ArrayList<>();
-        Bitmap icon = nearbyBaseMarker.getIcon();
-        Drawable d = new BitmapDrawable(getResources(), icon);
-        GeoPoint point = new GeoPoint(
-            nearbyBaseMarker.getPlace().location.getLatitude(),
-            nearbyBaseMarker.getPlace().location.getLongitude());
-        OverlayItem item = new OverlayItem(nearbyBaseMarker.getPlace().name, null,
-            point);
-        item.setMarker(d);
-        items.add(item);
-        ItemizedOverlayWithFocus overlay = new ItemizedOverlayWithFocus(items,
-            new OnItemGestureListener<OverlayItem>() {
-                @Override
-                public boolean onItemSingleTapUp(int index, OverlayItem item) {
-                    final Place place = nearbyBaseMarker.getPlace();
-                    if (clickedMarker != null) {
-                        removeMarker(clickedMarker);
-                        addMarkerToMap(clickedMarker);
-                        bottomSheetDetailsBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
-                        bottomSheetDetailsBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        if (isAttachedToActivity()) {
+            ArrayList<OverlayItem> items = new ArrayList<>();
+            Bitmap icon = nearbyBaseMarker.getIcon();
+            Drawable d = new BitmapDrawable(getResources(), icon);
+            GeoPoint point = new GeoPoint(
+                nearbyBaseMarker.getPlace().location.getLatitude(),
+                nearbyBaseMarker.getPlace().location.getLongitude());
+            OverlayItem item = new OverlayItem(nearbyBaseMarker.getPlace().name, null,
+                point);
+            item.setMarker(d);
+            items.add(item);
+            ItemizedOverlayWithFocus overlay = new ItemizedOverlayWithFocus(items,
+                new OnItemGestureListener<OverlayItem>() {
+                    @Override
+                    public boolean onItemSingleTapUp(int index, OverlayItem item) {
+                        final Place place = nearbyBaseMarker.getPlace();
+                        if (clickedMarker != null) {
+                            removeMarker(clickedMarker);
+                            addMarkerToMap(clickedMarker);
+                            bottomSheetDetailsBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+                            bottomSheetDetailsBehavior.setState(
+                                BottomSheetBehavior.STATE_COLLAPSED);
+                        }
+                        clickedMarker = nearbyBaseMarker;
+                        passInfoToSheet(place);
+                        return true;
                     }
-                    clickedMarker = nearbyBaseMarker;
-                    passInfoToSheet(place);
-                    return true;
-                }
 
-                @Override
-                public boolean onItemLongPress(int index, OverlayItem item) {
-                    return false;
-                }
-            }, getContext());
+                    @Override
+                    public boolean onItemLongPress(int index, OverlayItem item) {
+                        return false;
+                    }
+                }, getContext());
 
-        overlay.setFocusItemsOnTap(true);
-        binding.mapView.getOverlays().add(overlay); // Add the overlay to the map
+            overlay.setFocusItemsOnTap(true);
+            binding.mapView.getOverlays().add(overlay); // Add the overlay to the map
+        }
     }
 
     /**
@@ -711,68 +771,72 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
      */
     @Override
     public void clearAllMarkers() {
-        binding.mapView.getOverlayManager().clear();
-        GeoPoint geoPoint = mapCenter;
-        if (geoPoint != null) {
-            List<Overlay> overlays = binding.mapView.getOverlays();
-            ScaleDiskOverlay diskOverlay =
-                new ScaleDiskOverlay(this.getContext(),
-                    geoPoint, 2000, GeoConstants.UnitOfMeasure.foot);
-            Paint circlePaint = new Paint();
-            circlePaint.setColor(Color.rgb(128, 128, 128));
-            circlePaint.setStyle(Paint.Style.STROKE);
-            circlePaint.setStrokeWidth(2f);
-            diskOverlay.setCirclePaint2(circlePaint);
-            Paint diskPaint = new Paint();
-            diskPaint.setColor(Color.argb(40, 128, 128, 128));
-            diskPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-            diskOverlay.setCirclePaint1(diskPaint);
-            diskOverlay.setDisplaySizeMin(900);
-            diskOverlay.setDisplaySizeMax(1700);
-            binding.mapView.getOverlays().add(diskOverlay);
-            org.osmdroid.views.overlay.Marker startMarker = new org.osmdroid.views.overlay.Marker(
-                binding.mapView);
-            startMarker.setPosition(geoPoint);
-            startMarker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER,
-                org.osmdroid.views.overlay.Marker.ANCHOR_BOTTOM);
-            startMarker.setIcon(
-                ContextCompat.getDrawable(this.getContext(), R.drawable.current_location_marker));
-            startMarker.setTitle("Your Location");
-            startMarker.setTextLabelFontSize(24);
-            binding.mapView.getOverlays().add(startMarker);
-        }
-        ScaleBarOverlay scaleBarOverlay = new ScaleBarOverlay(binding.mapView);
-        scaleBarOverlay.setScaleBarOffset(15, 25);
-        Paint barPaint = new Paint();
-        barPaint.setARGB(200, 255, 250, 250);
-        scaleBarOverlay.setBackgroundPaint(barPaint);
-        scaleBarOverlay.enableScaleBar();
-        binding.mapView.getOverlays().add(scaleBarOverlay);
-        binding.mapView.getOverlays().add(new MapEventsOverlay(new MapEventsReceiver() {
-            @Override
-            public boolean singleTapConfirmedHelper(GeoPoint p) {
-                if (clickedMarker != null) {
-                    removeMarker(clickedMarker);
-                    addMarkerToMap(clickedMarker);
-                    binding.mapView.invalidate();
-                } else {
-                    Timber.e("CLICKED MARKER IS NULL");
-                }
-                if (bottomSheetDetailsBehavior.getState() == BottomSheetBehavior.STATE_EXPANDED) {
-                    // Back should first hide the bottom sheet if it is expanded
-                    bottomSheetDetailsBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
-                } else if (isDetailsBottomSheetVisible()) {
-                    hideBottomDetailsSheet();
-                }
-                return true;
+        if (isAttachedToActivity()) {
+            binding.mapView.getOverlayManager().clear();
+            GeoPoint geoPoint = mapCenter;
+            if (geoPoint != null) {
+                List<Overlay> overlays = binding.mapView.getOverlays();
+                ScaleDiskOverlay diskOverlay =
+                    new ScaleDiskOverlay(this.getContext(),
+                        geoPoint, 2000, GeoConstants.UnitOfMeasure.foot);
+                Paint circlePaint = new Paint();
+                circlePaint.setColor(Color.rgb(128, 128, 128));
+                circlePaint.setStyle(Paint.Style.STROKE);
+                circlePaint.setStrokeWidth(2f);
+                diskOverlay.setCirclePaint2(circlePaint);
+                Paint diskPaint = new Paint();
+                diskPaint.setColor(Color.argb(40, 128, 128, 128));
+                diskPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+                diskOverlay.setCirclePaint1(diskPaint);
+                diskOverlay.setDisplaySizeMin(900);
+                diskOverlay.setDisplaySizeMax(1700);
+                binding.mapView.getOverlays().add(diskOverlay);
+                org.osmdroid.views.overlay.Marker startMarker = new org.osmdroid.views.overlay.Marker(
+                    binding.mapView);
+                startMarker.setPosition(geoPoint);
+                startMarker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER,
+                    org.osmdroid.views.overlay.Marker.ANCHOR_BOTTOM);
+                startMarker.setIcon(
+                    ContextCompat.getDrawable(this.getContext(),
+                        R.drawable.current_location_marker));
+                startMarker.setTitle("Your Location");
+                startMarker.setTextLabelFontSize(24);
+                binding.mapView.getOverlays().add(startMarker);
             }
+            ScaleBarOverlay scaleBarOverlay = new ScaleBarOverlay(binding.mapView);
+            scaleBarOverlay.setScaleBarOffset(15, 25);
+            Paint barPaint = new Paint();
+            barPaint.setARGB(200, 255, 250, 250);
+            scaleBarOverlay.setBackgroundPaint(barPaint);
+            scaleBarOverlay.enableScaleBar();
+            binding.mapView.getOverlays().add(scaleBarOverlay);
+            binding.mapView.getOverlays().add(new MapEventsOverlay(new MapEventsReceiver() {
+                @Override
+                public boolean singleTapConfirmedHelper(GeoPoint p) {
+                    if (clickedMarker != null) {
+                        removeMarker(clickedMarker);
+                        addMarkerToMap(clickedMarker);
+                        binding.mapView.invalidate();
+                    } else {
+                        Timber.e("CLICKED MARKER IS NULL");
+                    }
+                    if (bottomSheetDetailsBehavior.getState()
+                        == BottomSheetBehavior.STATE_EXPANDED) {
+                        // Back should first hide the bottom sheet if it is expanded
+                        bottomSheetDetailsBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+                    } else if (isDetailsBottomSheetVisible()) {
+                        hideBottomDetailsSheet();
+                    }
+                    return true;
+                }
 
-            @Override
-            public boolean longPressHelper(GeoPoint p) {
-                return false;
-            }
-        }));
-        binding.mapView.setMultiTouchControls(true);
+                @Override
+                public boolean longPressHelper(GeoPoint p) {
+                    return false;
+                }
+            }));
+            binding.mapView.setMultiTouchControls(true);
+        }
     }
 
     /**
@@ -829,6 +893,18 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
         binding.mapView.getController().animateTo(geoPoint);
     }
 
+    /**
+     * Moves the camera of the map view to the specified GeoPoint at specified zoom level and speed
+     * using an animation.
+     *
+     * @param geoPoint The GeoPoint representing the new camera position for the map.
+     * @param zoom     Zoom level of the map camera
+     * @param speed    Speed of animation
+     */
+    private void moveCameraToPosition(GeoPoint geoPoint, double zoom, long speed) {
+        binding.mapView.getController().animateTo(geoPoint, zoom, speed);
+    }
+
     @Override
     public fr.free.nrw.commons.location.LatLng getLastMapFocus() {
         return lastMapFocus == null ? getMapCenter() : new fr.free.nrw.commons.location.LatLng(
@@ -854,14 +930,17 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
                     -0.07483536015053005, 1f);
             }
         }
-        moveCameraToPosition(new GeoPoint(latLnge.getLatitude(),latLnge.getLongitude()));
+        if (!isCameFromNearbyMap()) {
+            moveCameraToPosition(new GeoPoint(latLnge.getLatitude(), latLnge.getLongitude()));
+        }
         return latLnge;
     }
 
     @Override
     public fr.free.nrw.commons.location.LatLng getMapFocus() {
         fr.free.nrw.commons.location.LatLng mapFocusedLatLng = new fr.free.nrw.commons.location.LatLng(
-            binding.mapView.getMapCenter().getLatitude(), binding.mapView.getMapCenter().getLongitude(), 100);
+            binding.mapView.getMapCenter().getLatitude(),
+            binding.mapView.getMapCenter().getLongitude(), 100);
         return mapFocusedLatLng;
     }
 
@@ -914,9 +993,19 @@ public class ExploreMapFragment extends CommonsDaggerSupportFragment
         };
     }
 
-    @Override
-    public void onLocationPermissionDenied(String toastMessage) {}
+    /**
+     * helper function to confirm that this fragment has been attached.
+     **/
+    public boolean isAttachedToActivity() {
+        boolean attached = isVisible() && getActivity() != null;
+        return attached;
+    }
 
     @Override
-    public void onLocationPermissionGranted() {}
+    public void onLocationPermissionDenied(String toastMessage) {
+    }
+
+    @Override
+    public void onLocationPermissionGranted() {
+    }
 }

@@ -1,7 +1,9 @@
 package fr.free.nrw.commons.upload
 
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.free.nrw.commons.Media
 import fr.free.nrw.commons.category.CategoriesModel
 import fr.free.nrw.commons.category.CategoryItem
@@ -15,7 +17,9 @@ import fr.free.nrw.commons.repository.UploadRepository
 import fr.free.nrw.commons.upload.structure.depictions.DepictModel
 import fr.free.nrw.commons.upload.structure.depictions.DepictedItem
 import io.reactivex.Completable
+import io.reactivex.Observable
 import io.reactivex.Single
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -117,7 +121,9 @@ class UploadRepositoryUnitTest {
 
     @Test
     fun testGetUploads() {
-        assertEquals(repository.uploads, uploadModel.uploads)
+        val result = listOf(uploadItem)
+        whenever(uploadModel.uploads).thenReturn(result)
+        assertSame(result, repository.getUploads())
     }
 
     @Test
@@ -130,15 +136,15 @@ class UploadRepositoryUnitTest {
 
     @Test
     fun testGetSelectedCategories() {
-        assertEquals(repository.selectedCategories, categoriesModel.getSelectedCategories())
+        assertEquals(repository.getSelectedCategories(), categoriesModel.getSelectedCategories())
     }
 
     @Test
     fun testSearchAll() {
-        assertEquals(
-            repository.searchAll("", listOf(), listOf()),
-            categoriesModel.searchAll("", listOf(), listOf()),
-        )
+        val empty = Observable.empty<List<CategoryItem>>()
+        whenever(categoriesModel.searchAll(any(), any(), any())).thenReturn(empty)
+        assertSame(empty, repository.searchAll("", listOf(), listOf()))
+
     }
 
     @Test
@@ -163,17 +169,19 @@ class UploadRepositoryUnitTest {
 
     @Test
     fun testGetLicenses() {
-        assertEquals(repository.licenses, uploadModel.licenses)
+        whenever(uploadModel.licenses).thenReturn(listOf())
+        repository.getLicenses()
+        verify(uploadModel).licenses
     }
 
     @Test
     fun testGetSelectedLicense() {
-        assertEquals(repository.selectedLicense, uploadModel.selectedLicense)
+        assertEquals(repository.getSelectedLicense(), uploadModel.selectedLicense)
     }
 
     @Test
     fun testGetCount() {
-        assertEquals(repository.count, uploadModel.count)
+        assertEquals(repository.getCount(), uploadModel.count)
     }
 
     @Test
@@ -196,7 +204,7 @@ class UploadRepositoryUnitTest {
     fun testGetCaptionQuality() {
         assertEquals(
             repository.getCaptionQuality(uploadItem),
-            uploadModel.getCaptionQuality(uploadItem),
+            uploadModel.getCaptionQuality(uploadItem)
         )
     }
 
@@ -207,29 +215,16 @@ class UploadRepositoryUnitTest {
 
     @Test
     fun testGetUploadItemCaseNonNull() {
-        `when`(uploadModel.items).thenReturn(listOf(uploadItem))
+        `when`(uploadModel.items).thenReturn(mutableListOf(uploadItem))
         assertEquals(
             repository.getUploadItem(0),
-            uploadModel.items[0],
+            uploadItem,
         )
     }
 
     @Test
     fun testGetUploadItemCaseNull() {
         assertEquals(repository.getUploadItem(-1), null)
-    }
-
-    @Test
-    fun testSetSelectedLicense() {
-        assertEquals(repository.setSelectedLicense(""), uploadModel.setSelectedLicense(""))
-    }
-
-    @Test
-    fun testSetSelectedExistingDepictions() {
-        assertEquals(
-            repository.setSelectedExistingDepictions(listOf("")),
-            uploadModel.setSelectedExistingDepictions(listOf("")),
-        )
     }
 
     @Test
@@ -242,12 +237,14 @@ class UploadRepositoryUnitTest {
 
     @Test
     fun testGetSelectedDepictions() {
-        assertEquals(repository.selectedDepictions, uploadModel.selectedDepictions)
+        repository.getSelectedDepictions()
+        verify(uploadModel).selectedDepictions
     }
 
     @Test
     fun testGetSelectedExistingDepictions() {
-        assertEquals(repository.selectedExistingDepictions, uploadModel.selectedExistingDepictions)
+        repository.getSelectedExistingDepictions()
+        verify(uploadModel).selectedExistingDepictions
     }
 
     @Test
@@ -264,7 +261,7 @@ class UploadRepositoryUnitTest {
         `when`(uploadItem.place).thenReturn(place)
         `when`(place.wikiDataEntityId).thenReturn("1")
         assertEquals(
-            repository.placeDepictions,
+            repository.getPlaceDepictions(),
             depictModel.getPlaceDepictions(listOf("1")),
         )
     }
@@ -323,10 +320,10 @@ class UploadRepositoryUnitTest {
 
     @Test
     fun testIsWMLSupportedForThisPlace() {
-        `when`(uploadModel.items).thenReturn(listOf(uploadItem))
-        `when`(uploadItem.isWLMUpload).thenReturn(true)
+        whenever(uploadModel.items).thenReturn(mutableListOf(uploadItem))
+        whenever(uploadItem.isWLMUpload).thenReturn(true)
         assertEquals(
-            repository.isWMLSupportedForThisPlace,
+            repository.isWMLSupportedForThisPlace(),
             true,
         )
     }
@@ -369,7 +366,7 @@ class UploadRepositoryUnitTest {
     @Test
     fun testGetSelectedExistingCategories() {
         assertEquals(
-            repository.selectedExistingCategories,
+            repository.getSelectedExistingCategories(),
             categoriesModel.getSelectedExistingCategories(),
         )
     }
@@ -386,7 +383,8 @@ class UploadRepositoryUnitTest {
     fun testGetCategories() {
         assertEquals(
             repository.getCategories(listOf("Test")),
-            categoriesModel.getCategoriesByName(mutableListOf("Test")),
+            categoriesModel.getCategoriesByName(mutableListOf("Test"))
+                ?: Observable.empty<List<CategoryItem>>()
         )
     }
 }

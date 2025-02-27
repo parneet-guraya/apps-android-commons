@@ -22,7 +22,7 @@ class WikipediaInstructionsDialogFragment : DialogFragment() {
     ) = DialogAddToWikipediaInstructionsBinding
         .inflate(inflater, container, false)
         .apply {
-            val contribution: Contribution? = arguments!!.getParcelable(ARG_CONTRIBUTION)
+            val contribution: Contribution? = requireArguments().getParcelable(ARG_CONTRIBUTION)
             tvWikicode.setText(contribution?.media?.wikiCode)
             instructionsCancel.setOnClickListener { dismiss() }
             instructionsConfirm.setOnClickListener {
@@ -43,7 +43,7 @@ class WikipediaInstructionsDialogFragment : DialogFragment() {
     /**
      * Callback for handling confirm button clicked
      */
-    interface Callback {
+    fun interface Callback {
         fun onConfirmClicked(
             contribution: Contribution?,
             copyWikicode: Boolean,
